@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org" lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerta Enchentes - Itajubá/MG</title>
+    <link rel="icon" href="/static/favicon.ico" sizes="any">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/static/css/styles.css}">
+</head>
+<body>
+<div class="page">
+    <header class="top">
+        <div class="id">
+            <p class="kicker">Itajubá · MG · Projeto Bota pra Fazer</p>
+            <h1>Alerta<br>Enchentes</h1>
+            <p class="lede">Situação dos pontos de risco da cidade, avisos recentes e relatos de moradores. Consulte antes de sair de casa ou de deixar o carro na rua.</p>
+        </div>
+        <aside class="sos" aria-label="Emergência">
+            <p class="kicker">Emergência</p>
+            <p class="sos-num">199</p>
+            <p class="sos-name">Defesa Civil de Itajubá</p>
+            <a class="btn" href="tel:199">Ligar para a Defesa Civil</a>
+        </aside>
+    </header>
+
+    <section id="banner" class="banner" th:data-s="${#lists.isEmpty(pontos) ? 'normal' : ${#lists.sequence(0, pontos.size()-1).stream().map(i -> #strings.substringAfter(pontos.get(i).status.toString(), 'StatusPonto.')).max().orElse('normal')}}"
+             aria-live="polite" aria-label="Situação agora">
+        <div th:replace="~{fragments/banner :: bannerContent(pontos=${pontos}, alertas=${alertas})}"></div>
+    </section>
+
+    <section aria-labelledby="h-pontos">
+        <h2 class="sec" id="h-pontos">Pontos de risco</h2>
+        <div id="pontos" class="grid">
+            <article th:each="ponto : ${pontos}" class="ponto" th:data-s="${#strings.substringAfter(ponto.status.toString(), 'StatusPonto.').toLowerCase()}">
+                <div class="staff" role="img" th:aria-label="'Régua do rio: ' + ${#strings.substringAfter(ponto.status.toString(), 'StatusPonto.')}"
+                     th:style="'--lvl: ' + ${#maps.get({'NORMAL':'34%','ATENCAO':'67%','VERMELHO':'100%'}, #strings.substringAfter(ponto.status.toString(), 'StatusPonto.'))}">
+                    <i></i>
+                </div>
+                <div class="body">
+                    <p class="bairro" th:text="${ponto.bairro}">Bairro</p>
+                    <p class="local" th:text="${ponto.ponto}">Ponto de monitoramento</p>
+                    <span class="pill" th:text="${#maps.get({'NORMAL':'Normal','ATENCAO':'Atenção','VERMELHO':'Alerta vermelho'}, #strings.substringAfter(ponto.status.toString(), 'StatusPonto.'))}">Status</span>
+                    <p class="stamp" th:text="'Atualizado ' + ${#temporals.format(ponto.ts, 'dd/MM HH:mm')}">Atualizado</p>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <div class="cols">
+        <section aria-labelledby="h-avisos">
+            <h2 class="sec" id="h-avisos">Avisos recentes</h2>
+            <ol id="timeline" class="tl">
+                <li th:each="alerta : ${alertas}" class="ev" th:data-s="${#strings.substringAfter(#maps.get({'VERDE':'normal','AMARELO':'atencao','VERMELHO':'vermelho'}, alerta.nivel.toString()), '').toLowerCase()}">
+                    <div class="ev-meta">
+                        <time th:attr="datetime=${#temporals.format(alerta.ts, 'yyyy-MM-dd\'T\'HH:mm:ss')}" th:text="${#temporals.format(alerta.ts, 'dd/MM HH:mm')}">Data</time>
+                        <span class="chip" th:text="${#maps.get({'VERDE':'Normalizado','AMARELO':'Alerta amarelo','VERMELHO':'Alerta vermelho'}, alerta.nivel.toString())}">Nível</span>
+                        <strong th:text="${alerta.bairro}">Bairro</strong>
+                    </div>
+                    <p th:text="${alerta.descricao}">Descrição do aviso</p>
+                    <a class="share btn" th:href="'https://wa.me/?text=' + ${#strings.replace('Alerta Enchentes Itajubá · ' + #temporals.format(alerta.ts, 'dd/MM HH:mm') + ' · ' + #maps.get({'VERDE':'Normalizado','AMARELO':'Alerta amarelo','VERMELHO':'Alerta vermelho'}, alerta.nivel.toString()) + ' em ' + alerta.bairro + '. ' + alerta.descricao + ' Em emergência, ligue 199.', ' ', '%20')}" target="_blank" rel="noopener">Enviar no WhatsApp</a>
+                </li>
+                <li class="empty" th:if="${#lists.isEmpty(alertas)}">Nenhum aviso publicado ainda.</li>
+            </ol>
+        </section>
+
+        <section aria-labelledby="h-contatos">
+            <h2 class="sec" id="h-contatos">Contatos úteis</h2>
+            <ul class="contacts">
+                <li><span>Defesa Civil de Itajubá</span><a class="num" href="tel:199">199</a></li>
+                <li><span>Corpo de Bombeiros</span><a class="num" href="tel:193">193</a></li>
+                <li><span>Polícia Militar</span><a class="num" href="tel:190">190</a></li>
+            </ul>
+        </section>
+    </div>
+
+    <div class="cols">
+        <section aria-labelledby="h-reportar">
+            <h2 class="sec" id="h-reportar">Avise a vizinhança</h2>
+            <p class="sec-note">Viu rua alagada, rio subindo ou bueiro entupido? Conte aqui. Em risco imediato, ligue 199.</p>
+            <form id="form-relato" action="/api/relatos" method="post">
+                <div class="field">
+                    <label for="r-bairro">Bairro</label>
+                    <select id="r-bairro" name="bairro" required>
+                        <option value="" disabled selected>Selecione o bairro</option>
+                        <option th:each="ponto : ${pontos}" th:value="${ponto.bairro}" th:text="${ponto.bairro}">Bairro</option>
+                        <option value="Outro bairro">Outro bairro</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="r-tipo">O que você viu</label>
+                    <select id="r-tipo" name="tipo" required>
+                        <option value="Rua alagada">Rua alagada</option>
+                        <option value="Rio ou ribeirão subindo">Rio ou ribeirão subindo</option>
+                        <option value="Bueiro entupido">Bueiro entupido</option>
+                        <option value="Carro ou casa atingidos">Carro ou casa atingidos</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="r-desc">Descrição</label>
+                    <textarea id="r-desc" name="descricao" maxlength="400" placeholder="Ex.: Água na altura do meio-fio na rua principal, trânsito parado." required></textarea>
+                </div>
+                <div class="field">
+                    <label for="r-foto">Foto (opcional)</label>
+                    <input id="r-foto" name="foto" type="file" accept="image/*">
+                </div>
+                <button class="btn" type="submit" id="r-btn">Enviar relato</button>
+            </form>
+        </section>
+
+        <section aria-labelledby="h-relatos">
+            <h2 class="sec" id="h-relatos">Relatos de moradores</h2>
+            <p class="sec-note">Enviados pela comunidade, ainda não verificados pela Defesa Civil.</p>
+            <ul id="relatos" class="rel">
+                <li th:each="relato : ${relatos}" th:if="${relato.descricao}">
+                    <div class="meta">
+                        <span class="tipo" th:text="${relato.tipo}">Relato</span>
+                        <span th:text="${relato.bairro}">Bairro</span>
+                        <time th:attr="datetime=${#temporals.format(relato.ts, 'yyyy-MM-dd\'T\'HH:mm:ss')}" th:text="${#temporals.format(relato.ts, 'dd/MM HH:mm')}">Data</time>
+                        <span class="local-tag" th:if="${relato.localOnly}">salvo só neste aparelho</span>
+                    </div>
+                    <p th:text="${relato.descricao}">Descrição do relato</p>
+                    <img th:if="${relato.foto}" th:src="${relato.foto}" alt="Foto enviada pelo morador">
+                </li>
+                <li class="empty" th:if="${#lists.isEmpty(relatos)}">Nenhum relato ainda. Quem vir água subindo pode ser o primeiro a avisar.</li>
+            </ul>
+        </section>
+    </div>
+
+    <footer>
+        <p>Projeto Bota pra Fazer · Itajubá/MG. Protótipo universitário que não substitui os comunicados oficiais da Defesa Civil.</p>
+        <p>Leituras meteorológicas são estimativas públicas e não substituem os comunicados oficiais da Defesa Civil.</p>
+    </footer>
+</div>
+
+<script th:if="${weather}" th:inline="javascript">
+    (function() {
+        var banner = document.getElementById('banner');
+        if (banner && !banner.querySelector('.weather-note')) {
+            var p = document.createElement('p');
+            p.className = 'sec-note weather-note';
+            p.textContent = 'Meteorologia · Open-Meteo · ' + [[${weather.rainMm}]] + ' mm de chuva observada · probabilidade máx. nas próximas 6h: ' + [[${weather.next6hMaxProbability}]] + '%. ' + [[${weather.disclaimer}]];
+            banner.appendChild(p);
+        }
+    })();
+</script>
+
+<script th:src="@{/static/js/main.js}"></script>
+</body>
+</html>

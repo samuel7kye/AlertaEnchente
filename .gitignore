@@ -1,0 +1,42 @@
+# Build
+target/
+*.jar
+*.war
+*.ear
+*.class
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven
+mvnw
+mvnw.cmd
+.mvn/
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test
+test-results/
+jacoco.exec
+coverage/
+
+# Database
+*.db
+*.sqlite

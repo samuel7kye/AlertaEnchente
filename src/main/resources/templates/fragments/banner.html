@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<th:block th:fragment="bannerContent(pontos, alertas)">
+    <div th:with="
+        statusMap=${{'NORMAL':{label:'Normal',rank:0,lvl:'34%'},'ATENCAO':{label:'Atenção',rank:1,lvl:'67%'},'VERMELHO':{label:'Alerta vermelho',rank:2,lvl:'100%'}},
+        nivelMap=${{'VERDE':{label:'Normalizado',status:'normal'},'AMARELO':{label:'Alerta amarelo',status:'atencao'},'VERMELHO':{label:'Alerta vermelho',status:'vermelho'}},
+        worstRank=${#lists.sequence(0, pontos.size()-1).stream().map(i -> #maps.get(statusMap, #strings.substringAfter(pontos.get(i).status.toString(), 'StatusPonto.')).rank).max().orElse(0)},
+        hotPontos=${pontos.stream().filter(p -> #maps.get(statusMap, #strings.substringAfter(p.status.toString(), 'StatusPonto.')).rank == worstRank).toList()},
+        key=${worstRank == 2 ? 'vermelho' : (worstRank == 1 ? 'atencao' : 'normal')},
+        names=${#strings.listJoin(hotPontos.stream().map(p -> p.bairro).toList(), ', ', ' e ')},
+        head=${worstRank == 0 ? 'Todos os pontos estão normais' : #maps.get(statusMap, key).label + ' em ' + names},
+        latestAlerta=${alertas.stream().filter(a -> hotPontos.stream().anyMatch(p -> p.bairro == a.bairro) && #maps.get(nivelMap, a.nivel.toString()).status == key).findFirst().orElse(null)},
+        detail=${worstRank == 0 ? 'Nenhum ponto monitorado pede cuidado agora. Volte aqui para ver novos avisos.' : (latestAlerta != null ? latestAlerta.descricao : 'Fique atento e evite áreas alagadas.')},
+        lastTs=${pontos.stream().map(p -> p.ts).max(java.time.temporal.ChronoUnit.MILLIS).orElse(null)},
+        msg=${'Alerta Enchentes Itajubá · ' + head + '. ' + detail + ' Em emergência, ligue 199 (Defesa Civil).'}
+    ">
+        <p class="kicker">Situação agora</p>
+        <h2 th:text="${head}">Título do banner</h2>
+        <p th:text="${detail}">Detalhe do banner</p>
+        <div class="row">
+            <a class="share btn" th:href="'https://wa.me/?text=' + ${#strings.replace(msg, ' ', '%20')}" target="_blank" rel="noopener">Enviar no WhatsApp</a>
+            <button class="btn" type="button" onclick="navigator.clipboard.writeText([[${msg}]]).then(() => alert('Mensagem copiada')).catch(() => alert('Não foi possível copiar'))">Copiar mensagem</button>
+            <time th:if="${lastTs}" th:text="'Última atualização ' + ${#temporals.format(lastTs, 'dd/MM HH:mm')}">Última atualização</time>
+        </div>
+    </div>
+</th:block>
+</html>
