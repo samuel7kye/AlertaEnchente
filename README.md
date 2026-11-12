@@ -1,143 +1,52 @@
-# Alerta Enchentes - Itajubá/MG
+# Alerta Enchentes Itajubá
 
-Painel comunitário de monitoramento e alertas de chuva para Itajubá/MG. Reconstrução do projeto original (Next.js) usando **Java 21 + Spring Boot 3.3** com **PostgreSQL**.
+Painel comunitário do Projeto Bota pra Fazer. A página reúne a situação dos pontos de risco, avisos da equipe, relatos com fotos, contatos de emergência e a previsão de chuva para Itajubá/MG. A interface usa HTML, CSS e JavaScript servidos pelo Spring Boot.
 
-## 📋 Funcionalidades
+## Iniciar com o banco local já configurado
 
-- **Dashboard público** com situação dos pontos de risco em tempo real
-- **Régua linimétrica visual** (staff gauge) para cada ponto monitorado
-- **Sistema de avisos** da equipe (amarelo/vermelho/verde) com atualização automática de status dos pontos
-- **Relatos da comunidade** com envio de fotos (base64)
-- **Dados meteorológicos** via API pública Open-Meteo
-- **Painel administrativo** protegido por token (Bearer)
-- **Persistência em PostgreSQL** com migrações Flyway
-- **Design responsivo** fiel ao original (CSS custom properties, fontes Google Fonts)
+Neste computador, execute `./iniciar-local.ps1` na pasta do projeto. O script inicia o banco dedicado na porta 5433 e em seguida inicia o Spring Boot. Abra [http://localhost:8080](http://localhost:8080).
 
-## 🛠 Stack Tecnológica
+Use `./iniciar-local.ps1 -SomenteBanco` para iniciar apenas o banco e rodar o Maven em outro terminal. A configuração da conexão fica em `config/application.properties`, um arquivo local ignorado pelo Git. Para usar outro PostgreSQL, configure `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` como indicado abaixo. A pasta de dados da instância local fica em `%LOCALAPPDATA%\AlertaEnchentes\PostgreSQL16`.
 
-| Camada | Tecnologia |
-|--------|------------|
-| Linguagem | Java 21 |
-| Framework | Spring Boot 3.3.4 |
-| Template Engine | Thymeleaf |
-| Banco de Dados | PostgreSQL 16+ |
-| Migração | Flyway |
-| ORM | Spring Data JPA / Hibernate |
-| Segurança | Spring Security (filtro custom Bearer token) |
-| HTTP Client | WebClient (reactive) |
-| Build | Maven |
-| Frontend | HTML5 + CSS3 (custom properties) + Vanilla JS |
+## Executar no Windows
 
-## 🚀 Como Executar
+Use um JDK 21 ou mais recente e um banco PostgreSQL 16 ou mais recente. Crie o banco uma vez, pelo pgAdmin ou pelo `psql`, com um usuário autorizado a criar tabelas nesse banco.
 
-### Pré-requisitos
-- Java 21+
-- Maven 3.9+
-- PostgreSQL 16+ rodando localmente
-
-### Configuração do Banco
 ```sql
 CREATE DATABASE alerta_enchentes;
-CREATE USER postgres WITH PASSWORD 'postgres';
-GRANT ALL PRIVILEGES ON DATABASE alerta_enchentes TO postgres;
 ```
 
-### Variáveis de Ambiente
-```bash
-export DB_USERNAME=postgres
-export DB_PASSWORD=postgres
-export ADMIN_TOKEN=alerta-admin-2024
-export ADMIN_PASSWORD=admin123
+Na pasta do projeto, execute no PowerShell.
+
+```powershell
+$env:DB_URL = 'jdbc:postgresql://localhost:5432/alerta_enchentes'
+$env:DB_USERNAME = 'postgres'
+$env:DB_PASSWORD = Read-Host 'Senha do PostgreSQL' -MaskInput
+
+$env:ADMIN_EMAIL = Read-Host 'E-mail da equipe'
+$env:ADMIN_PASSWORD = Read-Host 'Senha da equipe' -MaskInput
+
+.\mvnw.cmd spring-boot:run
 ```
 
-### Build e Execução
-```bash
-# Clone e entre no diretório
-cd AlertaEnchentes-SpringBoot
+Abra [http://localhost:8080](http://localhost:8080). No Linux ou macOS, configure as mesmas variáveis e execute `sh ./mvnw spring-boot:run`. O Maven Wrapper baixa o Maven na primeira execução.
 
-# Build
-./mvnw clean package
+O Flyway cria as tabelas e cadastra os pontos de Varginha, Medicina e São Sebastião. O mesmo projeto pode usar um PostgreSQL gerenciado. Informe a URL JDBC e as credenciais do banco nas variáveis acima, incluindo `sslmode=require` na URL quando o provedor exigir TLS.
 
-# Execute
-./mvnw spring-boot:run
-# ou
+Configure `ADMIN_EMAIL` e `ADMIN_PASSWORD` para habilitar o acesso da equipe. O login usa uma sessão Spring Security. Para clientes de API existentes, `ADMIN_TOKEN` habilita autenticação opcional por `Authorization: Bearer <token>` nas rotas protegidas.
+
+## Coleta meteorológica
+
+O Spring Boot consulta a [API Open-Meteo](https://open-meteo.com/en/docs) na inicialização e a cada 15 minutos enquanto o servidor estiver em execução. Cada coleta válida gera uma linha em `weather_readings`, com o horário informado pelo provedor, o horário da coleta, a precipitação estimada e a maior probabilidade de chuva nas próximas seis horas.
+
+O painel lê a última coleta em `GET /api/weather`. Se uma coleta falhar, a leitura anterior continua disponível e é identificada como desatualizada após 16 minutos no intervalo padrão. Antes da primeira coleta válida, o endpoint retorna HTTP 503 e o painel informa a indisponibilidade. Para testes locais, `WEATHER_REFRESH_INTERVAL` aceita uma duração ISO 8601, como `PT5S`, e `WEATHER_API_URL` permite apontar para um servidor de teste.
+
+## Compilação e testes
+
+```powershell
+.\mvnw.cmd test
+.\mvnw.cmd package
 java -jar target/alerta-enchentes-1.0.0-SNAPSHOT.jar
 ```
 
-A aplicação sobe em **http://localhost:8080**
-
-## 📡 API Endpoints
-
-### Públicos
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/` | Página principal (Thymeleaf) |
-| GET | `/api/status` | Status completo (pontos, alertas, relatos) |
-| GET | `/api/weather` | Dados meteorológicos Open-Meteo |
-| GET | `/api/health` | Health check |
-| POST | `/api/relatos` | Enviar relato da comunidade |
-
-### Administrativos (requer `Authorization: Bearer <token>`)
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| POST | `/api/admin/session` | Verificar token admin |
-| POST | `/api/admin/alertas` | Publicar aviso (atualiza ponto) |
-| PATCH | `/api/admin/pontos/{id}` | Atualizar status do ponto |
-
-## 🗂 Estrutura do Projeto
-
-```
-src/
-├── main/
-│   ├── java/com/alertaenchentes/
-│   │   ├── AlertaEnchentesApplication.java
-│   │   ├── config/          # DataInitializer, WebConfig
-│   │   ├── controller/      # PageController, StatusController, RelatoController, AdminController
-│   │   ├── model/           # Entidades JPA + DTOs/Requests
-│   │   ├── repository/      # Spring Data JPA Repositories
-│   │   ├── security/        # SecurityConfig, AdminTokenFilter
-│   │   └── service/         # Business logic services
-│   └── resources/
-│       ├── application.yml
-│       ├── db/migration/    # Flyway SQL migrations
-│       ├── static/
-│       │   ├── css/styles.css
-│       │   └── js/main.js
-│       └── templates/
-│           ├── index.html
-│           └── fragments/banner.html
-└── test/
-```
-
-## 🎨 Design System (CSS)
-
-O projeto mantém o design original com:
-- **Cores semânticas** via CSS custom properties (`--ok`, `--warn`, `--red`, `--river`)
-- **Modo escuro automático** via `prefers-color-scheme`
-- **Tipografia**: Archivo (display), Source Sans 3 (body), IBM Plex Mono (mono)
-- **Régua linimétrica animada** (`.staff i` com `transition: height`)
-- **Layout responsivo** (grid + flexbox, breakpoints 760px)
-
-## 🔐 Segurança
-
-- Token admin configurável via `app.admin.token` (env `ADMIN_TOKEN`)
-- Filtro `AdminTokenFilter` intercepta rotas `/api/admin/**`, `/api/alertas`, `/api/pontos/**`
-- Autenticação stateless (Bearer token no header)
-- CSRF desabilitado para API REST
-
-## 📊 Monitoramento
-
-- Spring Boot Actuator em `/actuator/health`, `/actuator/info`, `/actuator/metrics`
-- Logs estruturados (SLF4J + Logback)
-
-## 🧪 Testes
-
-```bash
-./mvnw test
-```
-
-Usa Testcontainers para PostgreSQL real nos testes de integração.
-
-## 📝 Licença
-
-Projeto acadêmico - Projeto Bota pra Fazer · Itajubá/MG
+O site é um protótipo universitário. Em risco imediato, consulte a Defesa Civil pelo 199.

@@ -3,10 +3,13 @@ package com.alertaenchentes.service;
 import com.alertaenchentes.model.PontoMonitoramento;
 import com.alertaenchentes.repository.PontoMonitoramentoRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,9 +44,9 @@ public class PontoMonitoramentoService {
     @Transactional
     public PontoMonitoramento updateStatus(String id, PontoMonitoramento.StatusPonto status) {
         PontoMonitoramento ponto = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Ponto não encontrado: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ponto não encontrado"));
         ponto.setStatus(status);
-        ponto.setTs(LocalDateTime.now());
+        ponto.setTs(LocalDateTime.now(ZoneId.of("America/Sao_Paulo")));
         return repository.save(ponto);
     }
 
@@ -52,7 +55,7 @@ public class PontoMonitoramentoService {
         for (PontoMonitoramento ponto : defaultPontos) {
             if (!repository.existsById(ponto.getId())) {
                 ponto.setStatus(PontoMonitoramento.StatusPonto.NORMAL);
-                ponto.setTs(LocalDateTime.now());
+                ponto.setTs(LocalDateTime.now(ZoneId.of("America/Sao_Paulo")));
                 repository.save(ponto);
             }
         }

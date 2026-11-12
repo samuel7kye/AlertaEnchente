@@ -1,7 +1,6 @@
 package com.alertaenchentes.service;
 
 import com.alertaenchentes.model.*;
-import com.alertaenchentes.repository.PontoMonitoramentoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +15,6 @@ public class StatusService {
     private final PontoMonitoramentoService pontoService;
     private final AlertaService alertaService;
     private final RelatoService relatoService;
-    private final WeatherService weatherService;
 
     public StatusResponse getFullStatus() {
         List<PontoMonitoramento> pontos = pontoService.findAll();
@@ -28,9 +26,5 @@ public class StatusService {
                 .alertas(alertas)
                 .relatos(relatos)
                 .build();
-    }
-
-    public WeatherData getWeather() {
-        return weatherService.fetchWeather();
     }
 }

@@ -9,8 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +38,7 @@ public class RelatoService {
     @Transactional
     public Relato save(Relato relato) {
         if (relato.getTs() == null) {
-            relato.setTs(LocalDateTime.now());
+            relato.setTs(LocalDateTime.now(ZoneId.of("America/Sao_Paulo")));
         }
         return repository.save(relato);
     }
@@ -50,7 +50,7 @@ public class RelatoService {
                 .tipo(tipo)
                 .descricao(descricao)
                 .foto(foto)
-                .ts(LocalDateTime.now())
+                .ts(LocalDateTime.now(ZoneId.of("America/Sao_Paulo")))
                 .localOnly(localOnly)
                 .build();
         return repository.save(relato);

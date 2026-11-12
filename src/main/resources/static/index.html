@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="Painel comunitário de monitoramento e alertas de chuva em Itajubá/MG.">
+  <title>Alerta Enchentes Itajubá</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Source+Sans+3:wght@400;600;700&amp;display=swap">
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <script src="/static/js/main.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <header class="top">
+    <div class="id">
+      <p class="kicker">Itajubá · MG · Projeto Bota pra Fazer</p>
+      <h1>Alerta<br>Enchentes</h1>
+      <p class="lede">Situação dos pontos de risco da cidade, avisos recentes e relatos de moradores. Consulte antes de sair de casa ou de deixar o carro na rua.</p>
+    </div>
+    <aside class="sos" aria-label="Emergência">
+      <p class="kicker">Emergência</p>
+      <p class="sos-num">199</p>
+      <p class="sos-name">Defesa Civil de Itajubá</p>
+      <a class="btn" href="tel:199">Ligar para a Defesa Civil</a>
+    </aside>
+  </header>
+
+  <section id="banner" class="banner" data-s="indisponivel" aria-label="Situação agora">
+    <p class="kicker">Situação agora</p>
+    <h2 id="banner-title" aria-live="polite">Carregando situação dos pontos</h2>
+    <p id="banner-detail"></p>
+    <div id="banner-actions" class="row" hidden>
+      <a id="banner-share" class="btn" target="_blank" rel="noopener">Enviar no WhatsApp</a>
+      <button id="banner-copy" class="btn" type="button">Copiar mensagem</button>
+      <time id="banner-time"></time>
+    </div>
+    <p id="weather" class="weather-note">Consultando a última leitura meteorológica…</p>
+  </section>
+
+  <section aria-labelledby="h-pontos">
+    <h2 class="sec" id="h-pontos">Pontos de risco</h2>
+    <div id="pontos" class="grid"></div>
+    <p id="pontos-msg" class="msg" role="status"></p>
+    <p id="pontos-connection" class="msg err" role="status"></p>
+  </section>
+
+  <div class="cols">
+    <section aria-labelledby="h-avisos">
+      <h2 class="sec" id="h-avisos">Avisos recentes</h2>
+      <details class="admin" id="admin-login">
+        <summary>Acesso da equipe</summary>
+        <form id="form-login">
+          <div class="field">
+            <label for="login-email">E-mail</label>
+            <input id="login-email" type="email" autocomplete="username" required>
+          </div>
+          <div class="field">
+            <label for="login-password">Senha</label>
+            <input id="login-password" type="password" autocomplete="current-password" required>
+          </div>
+          <button class="btn" type="submit">Entrar</button>
+          <p id="login-msg" class="msg" role="status"></p>
+        </form>
+      </details>
+      <details class="admin" id="admin" hidden>
+        <summary>Painel da equipe: publicar aviso</summary>
+        <form id="form-aviso">
+          <div class="field"><label for="av-nivel">Nível</label>
+            <select id="av-nivel">
+              <option value="amarelo">Alerta amarelo (atenção)</option>
+              <option value="vermelho">Alerta vermelho (perigo)</option>
+              <option value="verde">Normalizado</option>
+            </select></div>
+          <div class="field"><label for="av-bairro">Bairro</label><select id="av-bairro" required></select></div>
+          <div class="field"><label for="av-desc">Mensagem</label><textarea id="av-desc" required maxlength="400" placeholder="Ex.: Chuva forte na cabeceira. Elevação do nível prevista."></textarea></div>
+          <button class="btn" type="submit" id="av-btn">Publicar aviso</button>
+          <p class="msg" id="av-msg" role="status"></p>
+        </form>
+        <button class="btn ghost" type="button" id="logout">Sair</button>
+      </details>
+      <ol id="timeline" class="tl"></ol>
+    </section>
+
+    <section aria-labelledby="h-contatos">
+      <h2 class="sec" id="h-contatos">Contatos úteis</h2>
+      <ul class="contacts">
+        <li><span>Defesa Civil de Itajubá</span><a class="num" href="tel:199">199</a></li>
+        <li><span>Corpo de Bombeiros</span><a class="num" href="tel:193">193</a></li>
+        <li><span>Polícia Militar</span><a class="num" href="tel:190">190</a></li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="cols">
+    <section aria-labelledby="h-reportar">
+      <h2 class="sec" id="h-reportar">Avise a vizinhança</h2>
+      <p class="sec-note">Viu rua alagada, rio subindo ou bueiro entupido? Conte aqui. Em risco imediato, ligue 199.</p>
+      <form id="form-relato">
+        <div class="field"><label for="r-bairro">Bairro</label><select id="r-bairro" required></select></div>
+        <div class="field"><label for="r-tipo">O que você viu</label>
+          <select id="r-tipo">
+            <option>Rua alagada</option>
+            <option>Rio ou ribeirão subindo</option>
+            <option>Bueiro entupido</option>
+            <option>Carro ou casa atingidos</option>
+            <option>Outro</option>
+          </select></div>
+        <div class="field"><label for="r-desc">Descrição</label><textarea id="r-desc" required maxlength="400" placeholder="Ex.: Água na altura do meio-fio na rua principal, trânsito parado."></textarea></div>
+        <div class="field"><label for="r-foto">Foto (opcional)</label><input id="r-foto" type="file" accept="image/*"><img id="r-prev" class="preview" alt="Prévia da foto escolhida" hidden></div>
+        <button class="btn" type="submit" id="r-btn">Enviar relato</button>
+        <p class="msg" id="r-msg" role="status"></p>
+      </form>
+    </section>
+
+    <section aria-labelledby="h-relatos">
+      <h2 class="sec" id="h-relatos">Relatos de moradores</h2>
+      <p class="sec-note">Enviados pela comunidade, ainda não verificados pela Defesa Civil.</p>
+      <ul id="relatos" class="rel"></ul>
+    </section>
+  </div>
+
+  <footer>
+    <p>Projeto Bota pra Fazer · Itajubá/MG. Protótipo universitário que não substitui os comunicados oficiais da Defesa Civil.</p>
+    <p>Leituras meteorológicas são estimativas públicas e não substituem os comunicados oficiais da Defesa Civil.</p>
+  </footer>
+</main>
+</body>
+</html>

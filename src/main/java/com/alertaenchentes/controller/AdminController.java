@@ -2,14 +2,14 @@ package com.alertaenchentes.controller;
 
 import com.alertaenchentes.model.*;
 import com.alertaenchentes.service.AdminService;
-import com.alertaenchentes.service.PontoMonitoramentoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -18,12 +18,18 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
-    private final PontoMonitoramentoService pontoService;
+
+    @GetMapping("/session")
+    public ResponseEntity<Map<String, Object>> currentSession(Authentication authentication, CsrfToken csrfToken) {
+        boolean authenticated = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(Map.of("authenticated", authenticated, "csrfToken", csrfToken.getToken()));
+    }
 
     @PostMapping("/session")
     public ResponseEntity<Map<String, Object>> verifySession(@Valid @RequestBody AdminLoginRequest request) {
-        boolean valid = adminService.verifyToken(request.getToken());
-        if (valid) {
+        if (adminService.verifyToken(request.getToken())) {
             return ResponseEntity.ok(Map.of("success", true, "message", "Acesso liberado"));
         }
         return ResponseEntity.status(401).body(Map.of("success", false, "error", "Senha incorreta"));
@@ -31,9 +37,7 @@ public class AdminController {
 
     @PostMapping("/alertas")
     public ResponseEntity<Alerta> createAviso(@Valid @RequestBody AvisoRequest request) {
-        Alerta alerta = adminService.createAviso(request);
-        List<PontoMonitoramento> pontos = adminService.getAllPontos();
-        return ResponseEntity.ok(alerta);
+        return ResponseEntity.ok(adminService.createAviso(request));
     }
 
     @PatchMapping("/pontos/{id}")
@@ -41,7 +45,6 @@ public class AdminController {
             @PathVariable String id,
             @Valid @RequestBody PontoStatusUpdate request
     ) {
-        PontoMonitoramento ponto = adminService.updatePontoStatus(id, request.getStatus());
-        return ResponseEntity.ok(ponto);
+        return ResponseEntity.ok(adminService.updatePontoStatus(id, request.getStatus()));
     }
 }

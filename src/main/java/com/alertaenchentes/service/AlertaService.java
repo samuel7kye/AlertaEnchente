@@ -7,9 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -37,7 +37,7 @@ public class AlertaService {
     @Transactional
     public Alerta save(Alerta alerta) {
         if (alerta.getTs() == null) {
-            alerta.setTs(LocalDateTime.now());
+            alerta.setTs(LocalDateTime.now(ZoneId.of("America/Sao_Paulo")));
         }
         return repository.save(alerta);
     }
@@ -48,7 +48,7 @@ public class AlertaService {
                 .bairro(bairro)
                 .nivel(nivel)
                 .descricao(descricao)
-                .ts(LocalDateTime.now())
+                .ts(LocalDateTime.now(ZoneId.of("America/Sao_Paulo")))
                 .build();
         return repository.save(alerta);
     }

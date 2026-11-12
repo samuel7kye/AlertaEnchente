@@ -4,8 +4,8 @@ import com.alertaenchentes.model.PontoMonitoramento;
 import com.alertaenchentes.service.PontoMonitoramentoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -14,15 +14,24 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@ConfigurationProperties(prefix = "app")
 public class DataInitializer implements CommandLineRunner {
 
     private final PontoMonitoramentoService pontoService;
 
-    @Value("${app.monitoring-points}")
     private List<MonitoringPointConfig> monitoringPoints;
+
+    public void setMonitoringPoints(List<MonitoringPointConfig> monitoringPoints) {
+        this.monitoringPoints = monitoringPoints;
+    }
 
     @Override
     public void run(String... args) {
+        if (monitoringPoints == null || monitoringPoints.isEmpty()) {
+            log.warn("Nenhum ponto de monitoramento configurado");
+            return;
+        }
+
         List<PontoMonitoramento> defaultPontos = monitoringPoints.stream()
                 .map(config -> PontoMonitoramento.builder()
                         .id(config.id())

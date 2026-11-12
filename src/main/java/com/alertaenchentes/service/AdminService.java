@@ -6,6 +6,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 
 @Service
@@ -20,12 +25,15 @@ public class AdminService {
     private String adminToken;
 
     public boolean verifyToken(String token) {
-        return adminToken.equals(token);
+        return !adminToken.isBlank() && token != null && MessageDigest.isEqual(
+                adminToken.getBytes(StandardCharsets.UTF_8), token.getBytes(StandardCharsets.UTF_8));
     }
 
     @Transactional
     public Alerta createAviso(AvisoRequest request) {
-        Alerta alerta = alertaService.create(request.getBairro(), request.getNivel(), request.getDescricao());
+        PontoMonitoramento ponto = pontoService.findByBairro(request.getBairro().trim())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bairro não monitorado"));
+        Alerta alerta = alertaService.create(ponto.getBairro(), request.getNivel(), request.getDescricao().trim());
 
         PontoMonitoramento.StatusPonto pontoStatus = switch (request.getNivel()) {
             case VERDE -> PontoMonitoramento.StatusPonto.NORMAL;
@@ -33,7 +41,7 @@ public class AdminService {
             case VERMELHO -> PontoMonitoramento.StatusPonto.VERMELHO;
         };
 
-        pontoService.updateStatus(request.getBairro().toLowerCase().replace(" ", "-"), pontoStatus);
+        pontoService.updateStatus(ponto.getId(), pontoStatus);
 
         return alerta;
     }
